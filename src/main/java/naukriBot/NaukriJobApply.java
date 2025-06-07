@@ -1,10 +1,11 @@
 package naukriBot;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 
 import java.io.*;
+import java.net.http.HttpClient;
 import java.util.*;
 
 public class NaukriJobApply {
@@ -132,11 +133,13 @@ public class NaukriJobApply {
 
                     // Find all anchor tags within the div
                     List<WebElement> anchorElements = divElement.findElements(By.tagName("a"));
-                	for(WebElement element : anchorElements) {
-                        if(!element.getAttribute("href").contains("ambitionbox"))
-                		joblink.add(element.getAttribute("href"));
-                	}
-                }catch (Exception e) {
+              for (WebElement element : anchorElements) {
+                String href = element.getAttribute("href");
+                if (href != null && !href.contains("ambitionbox")) {
+                    joblink.add(href);
+                }
+            }
+            } catch (Exception e) {
                     e.printStackTrace();
 				}                
                 for (String str : joblink) {
@@ -164,7 +167,11 @@ public class NaukriJobApply {
                             System.out.println("Applied for " + i + " Count " + applied);
                         } catch (Exception e) {
                         	try {
-                        	if(driver.findElement(By.xpath("//*[text()='Applied']"))!=null)
+
+                            if(driver.findElement(By.xpath("//*[text()='Apply on company site']"))!=null){
+                                driver.findElement(By.xpath("//*[text()='Save']")).click();
+                            }
+                                if(driver.findElement(By.xpath("//*[text()='Applied']"))!=null)
                                     continue;
                         	if(driver.findElement(By.xpath("//*[text()='I am intrested']"))!=null)
                         		driver.findElement(By.xpath("//*[text()='I am intrested']")).click();
@@ -220,7 +227,7 @@ public class NaukriJobApply {
     }
 
    private void fillDetails() throws IOException {
-       OllamaClient ollamaClient = new OllamaClient();
+       OllamaClient ollamaClient = new OllamaClient(HttpClient.newHttpClient(), new ObjectMapper());
        String reply = "";
     while (true) {
         try {
