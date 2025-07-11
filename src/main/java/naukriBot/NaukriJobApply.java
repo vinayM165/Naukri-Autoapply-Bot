@@ -14,11 +14,11 @@ public class NaukriJobApply {
     public static int experience = 3; // Add your experience
     private static List<String> joblink = new ArrayList<>(); // Initialized list to store links
     private static int maxcount = 200; // Max daily apply quota for Naukri
-    private static List<String> keywords = List.of(
-        "Java Developer", "Java Backend Developer", "Core Java Developer",
-        "Java J2EE", "Java Spring boot", "SDE-II Java",
-        "Software Developer Java", "SDE-III Java"
-    ); // Add your list of roles you want to apply for, comma-separated
+    private static List<String> keywords = new ArrayList<>(List.of(
+            "Java Developer", "Java Backend Developer", "Core Java Developer",
+            "Java J2EE", "Java Spring boot", "SDE-II Java",
+            "Software Developer Java", "SDE-III Java"
+    )); // Add your list of roles you want to apply for, comma-separated // Add your list of roles you want to apply for, comma-separated
     private static String location = ""; // Add your location/city name for within India or remote
     private static int applied = 0; // Count of jobs applied successfully
     private static int failed = 0; // Count of jobs failed
@@ -29,9 +29,9 @@ public class NaukriJobApply {
         applied_list.put("failed", new ArrayList<>());
     } // Saved list of applied and failed job links for manual review
 
-    private static String edgedriverfile = "C:\\Users\\hp5pr\\Downloads\\edgedriver_win64_\\msedgedriver.exe";
-    private static String yournaukriemail = "demo@gmail.com"; // Enter your username/email
-    private static String yournaukripass = "password"; // Enter your password
+    private static String edgedriverfile = "C:\\Users\\hp5pr\\Downloads\\edgedriver_win64 (2)\\msedgedriver.exe";
+    private static String yournaukriemail = "mandgevinay16@gmail.com"; // Enter your username/email
+    private static String yournaukripass = "vinay@16599"; // Enter your password
     WebDriver driver;
     String Logs = "";
 
@@ -114,7 +114,8 @@ public class NaukriJobApply {
 //                joblink.add(href);
 //            }
 //        }
-
+        Collections.shuffle(keywords);
+        // Shuffle keywords to randomize jo       b search order
         for (String k : keywords) {
             for (int i = 1; i < 5; i++) {
                 String url;
@@ -223,7 +224,7 @@ public class NaukriJobApply {
     }
 
     private void fillDetails() throws IOException {
-        OllamaClient ollamaClient = new OllamaClient(HttpClient.newHttpClient(), new ObjectMapper());
+//        OllamaClient ollamaClient = new OllamaClient(HttpClient.newHttpClient(), new ObjectMapper());
         String reply = "";
         while (true) {
             try {
@@ -235,7 +236,7 @@ public class NaukriJobApply {
 
                 // Check for MCQ options
                 List<WebElement> labels = driver.findElements(By.cssSelector("label.ssrc__label"));
-                reply = ollamaClient.getAnswerForOptions(messageText, labels.stream().map(WebElement::getText).toList());
+                reply = OpenApiClient.getCorrectOptionFromResumeContext(messageText, labels.stream().map(WebElement::getText).toList());
                 if (!labels.isEmpty()) {
                     for (WebElement label : labels) {
                         if (reply.toLowerCase().contains(label.getText().trim().toLowerCase())) {
@@ -246,7 +247,8 @@ public class NaukriJobApply {
                         }
                     }
                 } else {
-                    reply = ollamaClient.getPrompt(messageText);
+//                    reply = ollamaClient.getPrompt(messageText);
+                    reply = OpenApiClient.generatePrompt(messageText); // Use OpenAI client to generate a reply
                     // Type reply in input box (contenteditable div)
                     WebElement inputBox = driver.findElement(By.cssSelector("div.textArea[contenteditable='true']"));
 
