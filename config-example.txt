@@ -1,0 +1,61 @@
+====================================================================
+NAUKRI JOB APPLICATION BOT - CONFIGURATION EXAMPLE
+====================================================================
+
+STEP 1: Update Personal Information in ApplicationConfig.java
+------------------------------------------------------------
+FIRST_NAME = "Your_First_Name"
+LAST_NAME = "Your_Last_Name" 
+EMAIL = "your.email@example.com"
+PHONE = "9876543210"
+RESUME_PATH = "C:\\Users\\YourName\\Documents\\resume.pdf" (Optional)
+EXPERIENCE_YEARS = 5
+
+STEP 2: Update Naukri Credentials in ApplicationConfig.java
+----------------------------------------------------------
+NAUKRI_EMAIL = "your_naukri_username@example.com"
+NAUKRI_PASSWORD = "your_naukri_password"
+
+STEP 3: Update WebDriver Path in ApplicationConfig.java
+------------------------------------------------------
+EDGE_DRIVER_PATH = "C:\\Users\\YourName\\Downloads\\msedgedriver.exe"
+
+STEP 4: Customize Job Search in ApplicationConfig.java
+-----------------------------------------------------
+JOB_KEYWORDS = List.of(
+    "Java Developer",
+    "Spring Boot Developer", 
+    "Backend Developer",
+    "Full Stack Developer",
+    "Software Engineer"
+)
+
+LOCATION = "Bangalore" (or leave empty "" for all locations)
+MAX_DAILY_APPLICATIONS = 200
+
+STEP 5: Customize Default Responses in ApplicationConfig.java
+-----------------------------------------------------------
+DEFAULT_SALARY_EXPECTATION = "15-20 LPA"
+DEFAULT_NOTICE_PERIOD = "30 days"
+DEFAULT_RELOCATION_ANSWER = "Yes"
+DEFAULT_SKILLS = "Java, Spring Boot, Microservices, Docker, Kubernetes"
+
+====================================================================
+IMPORTANT NOTES:
+====================================================================
+
+1. Download EdgeDriver from: 
+   https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
+
+2. Make sure Java 16+ is installed
+
+3. Run with: mvn clean compile exec:java -Dexec.mainClass="naukriBot.NaukriMain"
+
+4. For AI responses, install Ollama:
+   - Download from: https://ollama.ai/
+   - Run: ollama pull llama2
+   - Start: ollama serve
+
+5. The bot will now automatically handle "Apply on Company Site" jobs!
+
+====================================================================
