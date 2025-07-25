@@ -9,31 +9,35 @@ import java.net.http.HttpClient;
 import java.util.*;
 
 public class NaukriJobApply {
-    private static String firstname = ""; // Add your LastName
-    private static String lastname = ""; // Add your FirstName
-    public static int experience = 3; // Add your experience
+    // Using configuration from ApplicationConfig
+    private static String firstname = ApplicationConfig.FIRST_NAME;
+    private static String lastname = ApplicationConfig.LAST_NAME;
+    private static String email = ApplicationConfig.EMAIL;
+    private static String phone = ApplicationConfig.PHONE;
+    private static String resumePath = ApplicationConfig.RESUME_PATH;
+    public static int experience = ApplicationConfig.EXPERIENCE_YEARS;
     private static List<String> joblink = new ArrayList<>(); // Initialized list to store links
-    private static int maxcount = 200; // Max daily apply quota for Naukri
-    private static List<String> keywords = List.of(
-        "Java Developer", "Java Backend Developer", "Core Java Developer",
-        "Java J2EE", "Java Spring boot", "SDE-II Java",
-        "Software Developer Java", "SDE-III Java"
-    ); // Add your list of roles you want to apply for, comma-separated
-    private static String location = ""; // Add your location/city name for within India or remote
+    private static int maxcount = ApplicationConfig.MAX_DAILY_APPLICATIONS;
+    private static List<String> keywords = ApplicationConfig.JOB_KEYWORDS;
+    private static String location = ApplicationConfig.LOCATION;
     private static int applied = 0; // Count of jobs applied successfully
     private static int failed = 0; // Count of jobs failed
+    private static int companySiteApplied = 0; // Count of company site applications
     private static Map<String, List<String>> applied_list = new HashMap<>();
 
     static {
         applied_list.put("passed", new ArrayList<>());
         applied_list.put("failed", new ArrayList<>());
+        applied_list.put("company_site", new ArrayList<>());
+        applied_list.put("company_site_failed", new ArrayList<>());
     } // Saved list of applied and failed job links for manual review
 
-    private static String edgedriverfile = "C:\\Users\\hp5pr\\Downloads\\edgedriver_win64_\\msedgedriver.exe";
-    private static String yournaukriemail = "demo@gmail.com"; // Enter your username/email
-    private static String yournaukripass = "password"; // Enter your password
+    private static String edgedriverfile = ApplicationConfig.EDGE_DRIVER_PATH;
+    private static String yournaukriemail = ApplicationConfig.NAUKRI_EMAIL;
+    private static String yournaukripass = ApplicationConfig.NAUKRI_PASSWORD;
     WebDriver driver;
     String Logs = "";
+    CompanySiteApplicationHandler companySiteHandler;
 
     private boolean cacheExists() {
         try {
@@ -72,6 +76,12 @@ public class NaukriJobApply {
         try {
             System.setProperty("webdriver.edge.driver", edgedriverfile); // Change driver according to the browser
             driver = new EdgeDriver();
+            
+            // Initialize company site application handler
+            companySiteHandler = new CompanySiteApplicationHandler(
+                driver, firstname, lastname, email, phone, resumePath, experience
+            );
+            
             if (cacheExists()) {
                 driver.get("https://naukri.com"); // Must visit first
                 loadCache();
@@ -153,35 +163,8 @@ public class NaukriJobApply {
                     }
                     if (str != null) driver.get(str);
                     if (applied <= maxcount) {
-                        try {
-                            Thread.sleep(3000);
-                            driver.findElement(By.xpath("//*[text()='Apply']")).click();
-                            try {
-                                Thread.sleep(2000);
-                                if (!driver.findElements(By.cssSelector("li.botItem .botMsg span")).isEmpty()) {
-                                    fillDetails();
-                                }
-                            } catch (InterruptedException e) {
-                                System.out.println("Apply button not found");
-                            }
-                            applied++;
-                            applied_list.get("passed").add(str);
-                            System.out.println("Applied for " + i + " Count " + applied);
-                        } catch (Exception e) {
-                            try {
-                                if (driver.findElement(By.xpath("//*[text()='Apply on company site']")) != null) {
-                                    driver.findElement(By.xpath("//*[text()='Save']")).click();
-                                }
-                                if (driver.findElement(By.xpath("//*[text()='Applied']")) != null) continue;
-                                if (driver.findElement(By.xpath("//*[text()='I am interested']")) != null)
-                                    driver.findElement(By.xpath("//*[text()='I am interested']")).click();
-                            } catch (Exception e1) {
-                                failed++;
-                                System.out.println("Apply button not found");
-                                Logs += "\n need to apply manually: " + str;
-                                applied_list.get("failed").add(str);
-                                System.out.println("Failed " + failed);
-                            }
+                        if (handleJobApplication(str, i)) {
+                            // Job application handled successfully
                         }
                         try {
                             if (driver.findElement(By.xpath("//*[text()='Your daily quota has been expired.']")) != null) {
@@ -213,6 +196,12 @@ public class NaukriJobApply {
                 e.printStackTrace();
             }
             System.out.println("Completed applying, closing browser, saving in applied jobs CSV");
+            System.out.println("=== APPLICATION SUMMARY ===");
+            System.out.println("Direct Applications: " + applied);
+            System.out.println("Company Site Applications: " + companySiteApplied);
+            System.out.println("Failed Applications: " + failed);
+            System.out.println("Total Processed: " + (applied + companySiteApplied + failed));
+            
             try {
                 driver.close();
             } catch (Exception e) {
@@ -220,6 +209,155 @@ public class NaukriJobApply {
             String csv_file = "naukriapplied.csv";
         }
         driver.quit();
+    }
+    
+    private boolean handleJobApplication(String jobUrl, int pageNumber) {
+        try {
+            Thread.sleep(3000);
+            
+            // Check if already applied
+            if (isAlreadyApplied()) {
+                System.out.println("Already applied to this job, skipping...");
+                return true;
+            }
+            
+            // Try direct application first
+            if (tryDirectApplication(jobUrl, pageNumber)) {
+                return true;
+            }
+            
+            // Try company site application
+            if (tryCompanySiteApplication(jobUrl, pageNumber)) {
+                return true;
+            }
+            
+            // Try other options (Save, I am interested)
+            if (tryAlternativeActions(jobUrl)) {
+                return true;
+            }
+            
+            // If all else fails, mark as failed
+            failed++;
+            System.out.println("Apply button not found");
+            Logs += "\n need to apply manually: " + jobUrl;
+            applied_list.get("failed").add(jobUrl);
+            System.out.println("Failed " + failed);
+            return false;
+            
+        } catch (Exception e) {
+            System.out.println("Error handling job application: " + e.getMessage());
+            failed++;
+            applied_list.get("failed").add(jobUrl);
+            return false;
+        }
+    }
+    
+    private boolean isAlreadyApplied() {
+        try {
+            WebElement appliedElement = driver.findElement(By.xpath("//*[text()='Applied']"));
+            return appliedElement != null && appliedElement.isDisplayed();
+        } catch (org.openqa.selenium.NoSuchElementException e) {
+            return false;
+        }
+    }
+    
+    private boolean tryDirectApplication(String jobUrl, int pageNumber) {
+        try {
+            WebElement applyButton = driver.findElement(By.xpath("//*[text()='Apply']"));
+            if (applyButton != null && applyButton.isDisplayed() && applyButton.isEnabled()) {
+                applyButton.click();
+                
+                try {
+                    Thread.sleep(2000);
+                    if (!driver.findElements(By.cssSelector("li.botItem .botMsg span")).isEmpty()) {
+                        fillDetails();
+                    }
+                } catch (InterruptedException e) {
+                    System.out.println("No chatbot interaction needed");
+                } catch (IOException e) {
+                    System.out.println("Error filling details: " + e.getMessage());
+                }
+                
+                applied++;
+                applied_list.get("passed").add(jobUrl);
+                System.out.println("Applied directly for page " + pageNumber + " Count " + applied);
+                return true;
+            }
+        } catch (org.openqa.selenium.NoSuchElementException e) {
+            // Apply button not found, continue to company site
+        }
+        return false;
+    }
+    
+    private boolean tryCompanySiteApplication(String jobUrl, int pageNumber) {
+        try {
+            // Check if "Apply on company site" button exists
+            WebElement companySiteButton = driver.findElement(By.xpath("//*[contains(text(), 'Apply on company site')]"));
+            if (companySiteButton != null && companySiteButton.isDisplayed()) {
+                System.out.println("Found 'Apply on company site' button for: " + jobUrl);
+                
+                // Use the company site handler
+                boolean success = companySiteHandler.handleCompanySiteApplication(jobUrl);
+                
+                if (success) {
+                    companySiteApplied++;
+                    applied_list.get("company_site").add(jobUrl);
+                    System.out.println("Successfully applied on company site for page " + pageNumber + " Count " + companySiteApplied);
+                    return true;
+                } else {
+                    // Save for manual review
+                    applied_list.get("company_site_failed").add(jobUrl);
+                    System.out.println("Company site application failed, saved for manual review");
+                    Logs += "\n Company site application failed (manual review needed): " + jobUrl;
+                    
+                    // Try to save the job as fallback
+                    try {
+                        WebElement saveButton = driver.findElement(By.xpath("//*[text()='Save']"));
+                        if (saveButton != null && saveButton.isDisplayed()) {
+                            saveButton.click();
+                            System.out.println("Job saved for later review");
+                        }
+                    } catch (org.openqa.selenium.NoSuchElementException e) {
+                        // Save button not found
+                    }
+                    
+                    return false;
+                }
+            }
+        } catch (org.openqa.selenium.NoSuchElementException e) {
+            // Company site button not found
+        }
+        return false;
+    }
+    
+    private boolean tryAlternativeActions(String jobUrl) {
+        try {
+            // Try "I am interested" button
+            WebElement interestedButton = driver.findElement(By.xpath("//*[text()='I am interested']"));
+            if (interestedButton != null && interestedButton.isDisplayed() && interestedButton.isEnabled()) {
+                interestedButton.click();
+                applied++;
+                applied_list.get("passed").add(jobUrl);
+                System.out.println("Clicked 'I am interested' - Count " + applied);
+                return true;
+            }
+        } catch (org.openqa.selenium.NoSuchElementException e) {
+            // Continue
+        }
+        
+        try {
+            // Try "Save" button as last resort
+            WebElement saveButton = driver.findElement(By.xpath("//*[text()='Save']"));
+            if (saveButton != null && saveButton.isDisplayed() && saveButton.isEnabled()) {
+                saveButton.click();
+                System.out.println("Job saved for later review");
+                return true;
+            }
+        } catch (org.openqa.selenium.NoSuchElementException e) {
+            // Continue
+        }
+        
+        return false;
     }
 
     private void fillDetails() throws IOException {
