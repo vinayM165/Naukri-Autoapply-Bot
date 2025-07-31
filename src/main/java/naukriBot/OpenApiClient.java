@@ -17,9 +17,56 @@ import java.util.Map;
 public class OpenApiClient {
     private static final HttpClient httpClient = HttpClient.newHttpClient();
     private static ObjectMapper objectMapper = new ObjectMapper();
-
+    private static final String baseUrl = "https://api.openai.com/v1";
+    private static final String apiKey = "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";
     private static final String  resumeContext = """
-              
+                Name: Vinay Mandge
+                Date of Birth: 16 May 1999
+                Years of total Experience: 3.9
+                Years of relevant experience in all technologies: 3.9
+                Last Working Day: 03 Aug 2025
+                Current Company: Provatosoft
+                Skills: Java, Spring Boot, REST APIs, Core Java, Java 8, J2EE, Hibernate, Spring MVC, Microservices, GCP, BigQuery, Pub/Sub, Apache Beam, Kubernetes, REST API, JDBC, JavaScript, Node.js, Jenkins, Docker, Splunk, PostgreSQL, Cassandra, Performance Testing, API Testing, Debugging, SOLID Principles, Design Patterns, React.js
+                Current CTC: 9.5 LPA
+                Expected CTC: 14 LPA
+                Notice Period: 2 months (Serving)
+                Current Location: Pune, India
+                Highest Qualification: Bachelor of Technology in Computer Science
+                Contact Info:
+                Phone: +91 9096103432
+                Email: mandgevinay16@gmail.com
+                LinkedIn: https://www.linkedin.com/in/vinay-mandge
+                
+                Experience:
+                
+                1. Software Developer – Provatosoft Private Limited (Vendor at Walmart Tech Global) [09/2023 - Present]
+                - Developed flexible APIs and maintained backend systems.
+                - Integrated messaging, search, and data warehousing features.
+                - Built tools for data reconciliation across systems.
+                - Implemented CI/CD pipelines and managed cloud infrastructure.
+                - Handled codebase of over 20,000 lines in microservices.
+                
+                2. Software Developer II – Capgemini [09/2021 - 08/2023]
+                - Built and deployed microservices using Java Spring Boot.
+                - Developed REST APIs and standardized processes.
+                - Acted as the primary contact for production issues.
+                
+                Projects:
+                
+                - **Walmart Sam's Club Elixir**: Built stream/batch data pipelines using PubSub, Apache Beam, and cloud tools.
+                - **Barclays BBG, Finance**: Delivered business banking modules using microservices architecture.
+                - **GE Healthcare**: Developed reusable modules and integrated systems with GE's enterprise platforms.
+                
+                Summary:
+                Experienced Java Developer with 3.9+ years in developing scalable applications and microservices using Java, Spring Boot, and modern cloud-native technologies. Skilled in performance optimization, API design, debugging, and DevOps tools like Docker, Jenkins, and Kubernetes.
+                
+                Education:
+                - HSC – R.C. Patel Junior College, 2017
+                - Bachelor of Technology in Computer Science – R.C. Patel Institute Of Technology, 2021
+                
+                Key Achievements:
+                - Employee of the Year at Provatosoft
+                - STAR Award for Outstanding Performance (2022) at Capgemini
                 """;
 
     public static String generateContextBasedResponse(String context, String question, String instructions) throws Exception {
